@@ -13,11 +13,11 @@ use embassy_stm32::rng::{self, Rng};
 use embassy_stm32::spi::Spi;
 use embassy_stm32::time::Hertz;
 use embassy_stm32::{bind_interrupts, peripherals};
-use embassy_time::Delay;
+use embassy_time::{Delay,Timer};
 use lora_phy::lorawan_radio::LorawanRadio;
 use lora_phy::sx126x::{self, Stm32wl, Sx126x, TcxoCtrlVoltage};
 use lora_phy::LoRa;
-use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode};
+use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode, JoinResponse, SendResponse};
 use lorawan_device::default_crypto::DefaultFactory as Crypto;
 use lorawan_device::{AppEui, AppKey, DevEui};
 use {defmt_rtt as _, panic_probe as _};
@@ -91,4 +91,22 @@ async fn main(_spawner: Spawner) {
         .unwrap();
 
     info!("LoRaWAN network joined: {:?}", resp);
+    loop {
+        info!("Sending uplink...");
+        let result = device.send(&[0x01, 0x02, 0x03, 0x04], 1, true).await;
+        info!("SendResult {:?}", result);
+        if let Ok(SendResponse::DownlinkReceived(_)) = result {
+            if let Some(downlink) = device.take_downlink() {
+                info!("DownlinkReceived {:?}", downlink);
+                break;
+            }
+            info!("DowlinkReceived None. Retrying ...");
+        } else if let Ok(SendResponse::RxComplete) = result {
+            info!("Uplink succeeded");
+            break;
+        } else { 
+            info!("Uplink failed: {:?}. Retrying...", result);
+        }
+        Timer::after_secs(1).await;
+    }
 }

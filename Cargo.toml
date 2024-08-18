@@ -10,6 +10,7 @@ exclude = [
     "examples/rp",
     "examples/stm32l0",
     "examples/stm32wl",
+    "examples/pycom-lopy4",
 ]
 resolver = "2"
 

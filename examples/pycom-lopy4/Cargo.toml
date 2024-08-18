@@ -1,0 +1,76 @@
+[package]
+name = "pycom-lopy4"
+version = "0.1.0"
+authors = ["windy40 <57284781+windy40@users.noreply.github.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+
+embedded-hal = "1"
+embedded-hal-async = "1"
+embedded-hal-bus = { version = "0.2.0", features = ["async"] }
+
+esp-backtrace = { version = "0.13.0", features = [
+    "esp32",
+    "exception-handler",
+    "panic-handler",
+   "println",  
+  #  "defmt",
+] }
+
+esp-println = { version = "0.10.0", features = ["esp32", "log"] }
+#esp-println = { version = "0.9.1", features = ["defmt-espflash", "esp32"] }
+#esp-println = { version = "0.10", features = ["defmt-espflash", "esp32"] }
+log = { version = "0.4.21" }
+static_cell = "2.1.0"
+
+esp-hal = { version = "0.19.0", features=["default", "esp32", "log", "async", "embedded-hal"]}
+esp-hal-embassy = { version = "0.2.0", features=["esp32", "log", "integrated-timers"]}
+
+# dependencies required for lora
+#embassy-executor = { version = "0.5.0", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers"] }
+embassy-executor    = { version = "0.6.0", features = ["task-arena-size-40960", "executor-thread", "log", "integrated-timers"] }
+embassy-time = { version = "0.3.0", features = ["log"] }
+#embassy-sync = { version = "0.5.0", features = ["defmt"] }
+embassy-sync = { version = "0.6.0", features = ["log"] }
+#embassy-rp = { version = "0.1.0", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl"] }
+
+
+lora-phy = { path = "../../lora-phy", features = ["lorawan-radio"] }
+lorawan-device = { path = "../../lorawan-device", features = ["embassy-time", "default-crypto"] }
+
+defmt = "0.3"
+#defmt-rtt = "0.4"
+#panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+#cortex-m = { version = "0.7.6", features = ["inline-asm"] }
+#cortex-m-rt = "0.7.0"
+#embedded-hal-bus = { version = "0.1.0", features = ["async"]}
+
+#static_cell = { version = "2.0.0" }
+#portable-atomic = { version = "1.5", features = ["critical-section"] } # needed for static_cell on thumbv6
+
+[patch.crates-io]
+# TODO: Async SPI with DMA was broken, see https://github.com/esp-rs/esp-hal/issues/1857
+#esp-hal = { path = "../esp-hal/esp-hal" }
+# esp-hal = { git = "https://github.com/esp-rs/esp-hal", rev = "2744a5dd86c0ff3b7a710969f60c7cad67b5539f" }
+esp-hal = { git = "https://github.com/esp-rs/esp-hal"}
+# TODO: No release for 0.19.0
+#esp-hal-embassy = { path = "../esp-hal/esp-hal-embassy" }
+#esp-hal-embassy = { git = "https://github.com/esp-rs/esp-hal", rev = "2744a5dd86c0ff3b7a710969f60c7cad67b5539f" }
+esp-hal-embassy = { git = "https://github.com/esp-rs/esp-hal"}
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1 # LLVM can perform better optimizations using a single thread
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false
