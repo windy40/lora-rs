@@ -6,10 +6,10 @@
 
 
 
-//use defmt::*;
+
 use esp_backtrace as _;
-use esp_println::println;
-//use log::{info, debug};
+use esp_println as _;
+use defmt::{info, debug};
 
 use esp_hal::{
     clock::ClockControl,
@@ -70,9 +70,7 @@ const MAX_TX_POWER: u8 = 14;
 //#[embassy_executor::main]
 #[esp_hal_embassy::main]
 async fn main(_spawner: Spawner) {
-    esp_println::logger::init_logger_from_env();
-    // log::debug!("Init!");
-    println!("Init:");
+    debug!("Init:");
 
     let peripherals = Peripherals::take();
     let system = SystemControl::new(peripherals.SYSTEM);
@@ -84,7 +82,7 @@ async fn main(_spawner: Spawner) {
     let timers = mk_static!([OneShotTimer<ErasedTimer>; 1], timers);
 
     //log::debug!("Init clocks!");
-    println!("Init clocks!");
+    debug!("Init clocks!");
 
     esp_hal_embassy::init(&clocks, timers);
 
@@ -98,7 +96,7 @@ async fn main(_spawner: Spawner) {
     let sclk = io.pins.gpio5;
     let miso = io.pins.gpio19;
     let mosi = io.pins.gpio27;
-    let cs = Output::new(io.pins.gpio18, Level::Low); // gpio18
+    let cs = Output::new(io.pins.gpio17, Level::Low); // gpio18
 
     let spi = Spi::new(peripherals.SPI2, 100.kHz(), SpiMode::Mode0, &clocks)
         // use NO_PIN for CS as we'll going to be using the SpiDevice trait
@@ -114,8 +112,8 @@ async fn main(_spawner: Spawner) {
 
     let spi_dev = ExclusiveDevice::new(spi, cs, Delay).unwrap();
 
-    let lora_reset = Output::new(io.pins.gpio22, Level::Low); //gpio22
-    let lora_dio0 = Input::new(io.pins.gpio26, Pull::None); //gpio26
+    let lora_reset = Output::new(io.pins.gpio18, Level::Low); //gpio22
+    let lora_dio0 = Input::new(io.pins.gpio23, Pull::None); //gpio26
     let iv = GenericSx127xInterfaceVariant::new(lora_reset, lora_dio0, None, None).unwrap();
 
     let config = sx127x::Config {
@@ -125,7 +123,7 @@ async fn main(_spawner: Spawner) {
         tx_boost: false,
     };
 
-    log::info!("Initializing LoRa");
+    info!("Initializing LoRa");
     let lora = {
         match LoRa::new(Sx127x::new(spi_dev, iv, config), true, Delay).await {
             Ok(r) => r,
@@ -143,7 +141,7 @@ async fn main(_spawner: Spawner) {
     let mut device: Device<_, Crypto, _, _> =
         Device::new(region, radio, EmbassyTimer::new(), Rng::new(peripherals.RNG)); //embassy_rp::clocks::RoscRng
 
-    log::info!("Joining LoRaWAN network");
+    info!("Joining LoRaWAN network");
 
     // TODO: Adjust the EUI and Keys according to your network credentials
     let resp = device
@@ -155,5 +153,5 @@ async fn main(_spawner: Spawner) {
         .await
         .unwrap();
 
-    log::info!("LoRaWAN network joined: {:?}", resp);
+    info!("LoRaWAN network joined: {:?}", resp);
 }

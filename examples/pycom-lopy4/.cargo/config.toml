@@ -1,13 +1,15 @@
 [target.xtensa-esp32-none-elf]
-runner = "espflash flash -b no-reset"
+runner = "espflash flash -b no-reset --monitor --log-format defmt"
 
 
 [env]
-ESP_LOGLEVEL="trace"
+DEFMT_LOG = "trace"
 
 [build]
 rustflags = [
+  "-C", "link-arg=-Tlinkall.x",
   "-C", "link-arg=-nostartfiles",
+  "-C", "link-arg=-Tdefmt.x",
 ]
 
 target = "xtensa-esp32-none-elf"
