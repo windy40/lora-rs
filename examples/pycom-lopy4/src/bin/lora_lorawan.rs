@@ -4,9 +4,6 @@
 #![no_std]
 #![no_main]
 
-
-
-
 use esp_backtrace as _;
 use esp_println as _;
 use defmt::{info, debug};
@@ -33,7 +30,7 @@ use esp_hal::{
 use embassy_executor::Spawner;
 //use embassy_rp::gpio::{Input, Level, Output, Pin, Pull};
 //use embassy_rp::spi::{Config, Spi};
-use embassy_time::Delay;
+use embassy_time::{Delay,Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
 //use lora_phy::iv::GenericSx126xInterfaceVariant;
 use lora_phy::iv::GenericSx127xInterfaceVariant;
@@ -41,7 +38,7 @@ use lora_phy::lorawan_radio::LorawanRadio;
 //use lora_phy::sx126x::{self, Sx1262, Sx126x, TcxoCtrlVoltage};
 use lora_phy::sx127x::{self, Sx1276, Sx127x};
 use lora_phy::LoRa;
-use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode};
+use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode, JoinResponse, SendResponse};
 use lorawan_device::default_crypto::DefaultFactory as Crypto;
 use lorawan_device::{AppEui, AppKey, DevEui};
 //use {defmt_rtt as _, panic_probe as _};
@@ -96,7 +93,7 @@ async fn main(_spawner: Spawner) {
     let sclk = io.pins.gpio5;
     let miso = io.pins.gpio19;
     let mosi = io.pins.gpio27;
-    let cs = Output::new(io.pins.gpio17, Level::Low); // gpio18
+    let cs = Output::new(io.pins.gpio18, Level::Low); // gpio18 Level::Low
 
     let spi = Spi::new(peripherals.SPI2, 100.kHz(), SpiMode::Mode0, &clocks)
         // use NO_PIN for CS as we'll going to be using the SpiDevice trait
@@ -112,7 +109,7 @@ async fn main(_spawner: Spawner) {
 
     let spi_dev = ExclusiveDevice::new(spi, cs, Delay).unwrap();
 
-    let lora_reset = Output::new(io.pins.gpio18, Level::Low); //gpio22
+    let lora_reset = Output::new(io.pins.gpio17, Level::Low); //lilygo gpio22
     let lora_dio0 = Input::new(io.pins.gpio23, Pull::None); //gpio26
     let iv = GenericSx127xInterfaceVariant::new(lora_reset, lora_dio0, None, None).unwrap();
 
@@ -144,14 +141,22 @@ async fn main(_spawner: Spawner) {
     info!("Joining LoRaWAN network");
 
     // TODO: Adjust the EUI and Keys according to your network credentials
-    let resp = device
+    loop{
+    if let Ok(JoinResponse::JoinSuccess) = device
         .join(&JoinMode::OTAA {
             deveui: DevEui::from([0x9d, 0xd0, 0x0e, 0x9f, 0x49, 0xd5, 0xb3, 0x70]),
             appeui: AppEui::from([0, 0, 0, 0, 0, 0, 0, 0]),
             appkey: AppKey::from([0x2c,0xc1,0x72,0x96,0x9d,0x5c,0xc2,0x63,0x82,0xe0,0xad,0x05,0x45,0x68,0xce,0x3e]),
+   //         appkey: AppKey::from([0x3e,0xce,0x68,0x45,0x05,0xad,0xe0,0x82,0x63,0xc2,0x5c,0x9d,0x96,0x72,0xc1,0x2c]),
         })
         .await
-        .unwrap();
-
-    info!("LoRaWAN network joined: {:?}", resp);
+ //       .unwrap()
+        {
+            info!("LoRaWAN network joined");
+            break;
+        }
+        Timer::after_secs(5).await;
+        info!("LoRaWAN network join failed. Retrying ...");
+    }
+    
 }

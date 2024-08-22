@@ -6,6 +6,8 @@
 //! use lorawan::parser::*;
 //! use lorawan::keys::*;
 //!
+//! 
+//! 
 //! let data = vec![0x40, 0x04, 0x03, 0x02, 0x01, 0x80, 0x01, 0x00, 0x01,
 //!     0xa6, 0x94, 0x64, 0x26, 0x15, 0xd6, 0xc3, 0xb5, 0x82];
 //! if let Ok(PhyPayload::Data(DataPayload::Encrypted(phy))) = parse(data) {
@@ -20,6 +22,7 @@
 //! }
 //! ```
 
+use defmt;
 use crate::keys::NewSKey;
 
 use super::keys::{AppKey, AppSKey, CryptoFactory, Encrypter, AES128, MIC};
@@ -400,7 +403,10 @@ impl<T: AsRef<[u8]>, F> AsPhyPayloadBytes for DecryptedJoinAcceptPayload<T, F> {
 impl<T: AsRef<[u8]>, F: CryptoFactory> DecryptedJoinAcceptPayload<T, F> {
     /// Verifies that the JoinAccept has correct MIC.
     pub fn validate_mic(&self, key: &AppKey) -> bool {
-        self.mic() == self.calculate_mic(key)
+        let phys_pl_mic = self.mic();
+        let calculated_mic = self.calculate_mic(key);
+        defmt::debug!("PHYS Payload MIC {} calculated MIC {}",phys_pl_mic, calculated_mic);
+        phys_pl_mic == calculated_mic
     }
 
     pub fn calculate_mic(&self, key: &AppKey) -> MIC {

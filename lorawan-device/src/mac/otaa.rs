@@ -8,7 +8,7 @@ use lorawan::{
     parser::{parse_with_factory as lorawan_parse, *},
 };
 use rand_core::RngCore;
-
+use crate::log;
 pub(crate) type DevNonce = lorawan::parser::DevNonce<[u8; 2]>;
 
 pub(crate) struct Otaa {
@@ -51,11 +51,16 @@ impl Otaa {
         region: &mut Configuration,
         configuration: &mut super::Configuration,
         rx: &mut RadioBuffer<N>,
-    ) -> Option<Session> {
-        if let Ok(PhyPayload::JoinAccept(JoinAcceptPayload::Encrypted(encrypted))) =
-            lorawan_parse(rx.as_mut_for_read(), C::default())
+    ) -> Option<Session> {     
+        log::trace!("RadioBuffer {}",rx);
+        let phypayload = lorawan_parse(rx.as_mut_for_read(), C::default());
+        match phypayload
         {
+            Ok(PhyPayload::JoinAccept(JoinAcceptPayload::Encrypted(encrypted))) =>
+        {
+            log::trace!("JoinAccept encrypted payload {=[u8]:x}", encrypted.as_bytes());
             let decrypt = encrypted.decrypt(&self.network_credentials.appkey);
+            log::trace!("JoinAccept decrypted payload {=[u8]:x}", decrypt.as_bytes());
             region.process_join_accept(&decrypt);
             configuration.rx1_delay = del_to_delay_ms(decrypt.rx_delay());
             if decrypt.validate_mic(&self.network_credentials.appkey) {
@@ -65,7 +70,15 @@ impl Otaa {
                     &self.network_credentials,
                 ));
             }
+            else {
+                log::debug!("JoinAccept message parsed, MIC not validated");
+            }
         }
+        Err(e) => {
+            log::debug!("lorawan_parse error {}", e);
+        }
+        _ => {}
+    }
         None
     }
 

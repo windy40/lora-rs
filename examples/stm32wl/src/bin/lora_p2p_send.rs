@@ -20,7 +20,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 use self::iv::{InterruptHandler, Stm32wlInterfaceVariant, SubghzSpiDevice};
 
-const LORA_FREQUENCY_IN_HZ: u32 = 903_900_000; // warning: set this appropriately for the region
+const LORA_FREQUENCY_IN_HZ: u32 = 868_100_000; // 903_900_000; // warning: set this appropriately for the region
 
 bind_interrupts!(struct Irqs{
     SUBGHZ_RADIO => InterruptHandler;

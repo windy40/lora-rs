@@ -58,7 +58,7 @@ impl RxQuality {
         self.snr
     }
 }
-
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct RadioBuffer<const N: usize> {
     packet: [u8; N],
     pos: usize,

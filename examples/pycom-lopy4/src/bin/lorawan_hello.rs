@@ -109,7 +109,7 @@ async fn main(_spawner: Spawner) {
 
     let spi_dev = ExclusiveDevice::new(spi, cs, Delay).unwrap();
 
-    let lora_reset = Output::new(io.pins.gpio22, Level::Low); //lilygo gpio22
+    let lora_reset = Output::new(io.pins.gpio17, Level::Low); //lilygo gpio22
     let lora_dio0 = Input::new(io.pins.gpio23, Pull::None); //gpio26
     let iv = GenericSx127xInterfaceVariant::new(lora_reset, lora_dio0, None, None).unwrap();
 
@@ -147,6 +147,7 @@ async fn main(_spawner: Spawner) {
             deveui: DevEui::from([0x9d, 0xd0, 0x0e, 0x9f, 0x49, 0xd5, 0xb3, 0x70]),
             appeui: AppEui::from([0, 0, 0, 0, 0, 0, 0, 0]),
             appkey: AppKey::from([0x2c,0xc1,0x72,0x96,0x9d,0x5c,0xc2,0x63,0x82,0xe0,0xad,0x05,0x45,0x68,0xce,0x3e]),
+   //         appkey: AppKey::from([0x3e,0xce,0x68,0x45,0x05,0xad,0xe0,0x82,0x63,0xc2,0x5c,0x9d,0x96,0x72,0xc1,0x2c]),
         })
         .await
  //       .unwrap()
