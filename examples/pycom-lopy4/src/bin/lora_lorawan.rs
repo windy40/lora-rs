@@ -10,38 +10,32 @@ use defmt::{info, debug};
 
 use esp_hal::{
     clock::ClockControl,
-    dma::{Dma, DmaPriority, Spi2DmaChannel},
-    dma_descriptors,
+    dma::*,
+    dma_buffers,
     gpio::{Input, Io, Level, Output, Pull, NO_PIN},
     peripherals::Peripherals,
     prelude::*,
     spi::{
-        master::{dma::SpiDma, prelude::*, Spi},
-        FullDuplexMode, SpiMode,
+        master::Spi,
+        SpiMode,
     },
     system::SystemControl,
     timer::{timg::TimerGroup, ErasedTimer, OneShotTimer},
-    Async, FlashSafeDma,
     rng::Rng,
 };
 
-// packages to import for lora-lorawan (see rp example)
-//use defmt::*;
 use embassy_executor::Spawner;
-//use embassy_rp::gpio::{Input, Level, Output, Pin, Pull};
-//use embassy_rp::spi::{Config, Spi};
 use embassy_time::{Delay,Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
-//use lora_phy::iv::GenericSx126xInterfaceVariant;
+
 use lora_phy::iv::GenericSx127xInterfaceVariant;
 use lora_phy::lorawan_radio::LorawanRadio;
-//use lora_phy::sx126x::{self, Sx1262, Sx126x, TcxoCtrlVoltage};
 use lora_phy::sx127x::{self, Sx1276, Sx127x};
 use lora_phy::LoRa;
-use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode, JoinResponse, SendResponse};
+use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode, JoinResponse};
 use lorawan_device::default_crypto::DefaultFactory as Crypto;
 use lorawan_device::{AppEui, AppKey, DevEui};
-//use {defmt_rtt as _, panic_probe as _};
+
 
 use static_cell::StaticCell;
 macro_rules! mk_static {
@@ -51,12 +45,12 @@ macro_rules! mk_static {
     }};
 }
 
-const DMA_BUF: usize = 256;
-type SafeSpiDma = FlashSafeDma<
-    SpiDma<'static, esp_hal::peripherals::SPI2, Spi2DmaChannel, FullDuplexMode, Async>,
-    DMA_BUF,
->;
-
+//const DMA_BUF: usize = 256;
+//type SafeSpiDma = FlashSafeDma<
+//    SpiDma<'static, esp_hal::peripherals::SPI2, Spi2DmaChannel, FullDuplexMode, Async>,
+//    DMA_BUF,
+//>;
+//type SpiDmaT = SpiDma<'static, esp_hal::peripherals::SPI2, Spi2DmaChannel, FullDuplexMode, Async>;
 
 // warning: set these appropriately for the region
 const LORAWAN_REGION: region::Region = region::Region::EU868;
@@ -88,7 +82,9 @@ async fn main(_spawner: Spawner) {
     let dma = Dma::new(peripherals.DMA);
     let dma_channel = dma.spi2channel;
 
-    let (tx_descriptors, rx_descriptors) = dma_descriptors!(1024);
+    let (tx_buffer, tx_descriptors, rx_buffer, rx_descriptors) = dma_buffers!(32000);
+    let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
+    let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buffer).unwrap();
 
     let sclk = io.pins.gpio5;
     let miso = io.pins.gpio19;
@@ -99,13 +95,10 @@ async fn main(_spawner: Spawner) {
         // use NO_PIN for CS as we'll going to be using the SpiDevice trait
         // via ExclusiveSpiDevice as we don't (yet) want to pull in embassy-sync
         .with_pins(Some(sclk), Some(mosi), Some(miso), NO_PIN)
-        .with_dma(
-            dma_channel.configure_for_async(false, DmaPriority::Priority0),
-            tx_descriptors,
-            rx_descriptors,
-        );
+        .with_dma(dma_channel.configure_for_async(false, DmaPriority::Priority0))        
+        .with_buffers(dma_tx_buf, dma_rx_buf);
 
-    let spi: SafeSpiDma = FlashSafeDma::new(spi);
+//    let spi: SafeSpiDma = FlashSafeDma::new(spi);
 
     let spi_dev = ExclusiveDevice::new(spi, cs, Delay).unwrap();
 

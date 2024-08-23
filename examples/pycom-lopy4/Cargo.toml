@@ -22,15 +22,14 @@ esp-backtrace = { version = "0.13.0", features = [
 esp-hal = { version = "0.19.0", features=["default", "esp32", "defmt", "async", "embedded-hal"]}
 esp-hal-embassy = { version = "0.2.0", features=["esp32", "defmt", "integrated-timers"]}
 esp-println = { version = "0.10.0", features = ["esp32", "defmt-espflash"] }
-#esp-println = { version = "0.10.0", features = ["esp32"] }
+
 static_cell = "2.1.0"
 no_std_strings = "0.1.3"
 
 
-#embassy-executor = { version = "0.5.0", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers"] }
+
 embassy-executor    = { version = "0.6.0", features = ["task-arena-size-40960", "executor-thread", "defmt", "integrated-timers"] }
 embassy-time = { version = "0.3.0", features = ["defmt", "defmt-timestamp-uptime"] }
-#embassy-sync = { version = "0.5.0", features = ["defmt"] }
 embassy-sync = { version = "0.6.0", features = ["defmt"] }
 
 
@@ -43,12 +42,8 @@ with-oled = []
 
 [patch.crates-io]
 # TODO: Async SPI with DMA was broken, see https://github.com/esp-rs/esp-hal/issues/1857
-#esp-hal = { path = "../esp-hal/esp-hal" }
-# esp-hal = { git = "https://github.com/esp-rs/esp-hal", rev = "2744a5dd86c0ff3b7a710969f60c7cad67b5539f" }
 esp-hal = { git = "https://github.com/esp-rs/esp-hal"}
 # TODO: No release for 0.19.0
-#esp-hal-embassy = { path = "../esp-hal/esp-hal-embassy" }
-#esp-hal-embassy = { git = "https://github.com/esp-rs/esp-hal", rev = "2744a5dd86c0ff3b7a710969f60c7cad67b5539f" }
 esp-hal-embassy = { git = "https://github.com/esp-rs/esp-hal"}
 
 [profile.dev]
